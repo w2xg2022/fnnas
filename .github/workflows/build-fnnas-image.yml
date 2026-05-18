@@ -24,7 +24,7 @@ on:
       fnnas_board:
         description: "Select fnnas device board"
         required: false
-        default: "all"
+        default: "rockchip50"
         type: choice
         options:
           - allwinner
