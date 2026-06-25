@@ -1,3 +1,5 @@
+> 🔧 **w2xg2022 自訂雲編譯**（個人適配板子）：[Armbian](https://github.com/w2xg2022/armbian) ｜ [FnOS/FnNAS](https://github.com/w2xg2022/fnnas) ｜ 核心源碼 [armbian-kernel](https://github.com/w2xg2022/armbian-kernel)
+
 <div align="center">
     <img src="https://github.com/user-attachments/assets/ea86c39b-4ed6-4f14-b7e6-bc551b495e39" alt="FnNAS" />
 </div>
