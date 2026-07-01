@@ -81,13 +81,9 @@ mkdir -p "${FAKE_MODDIR}"
 ln -s "${HDRDIR}" "${FAKE_MODDIR}/build"
 
 # headers tarball 是在 arm64 环境打包的，scripts/ 下的 host tool（fixdep、modpost 等）
-# 都是 aarch64 binary，在 x86 runner 上跑不了。删掉它们，让 make HOSTCC=gcc 重编成 x86。
-echo "[maxio] cleaning arm64 host tools in headers..."
-find "${HDRDIR}/scripts" -type f -executable 2>/dev/null | while read -r f; do
-	if file "$f" 2>/dev/null | grep -q 'ELF.*aarch64'; then
-		rm -f "$f"
-	fi
-done
+# 都是 aarch64 binary，在 x86 runner 上跑不了。先用 HOSTCC=gcc 重编所有 host tools。
+echo "[maxio] rebuilding host tools with native gcc..."
+make -C "${HDRDIR}" scripts HOSTCC=gcc HOSTCXX=g++ 2>&1 | tail -10
 
 echo "[maxio] cross-compiling maxio.ko for ${KVER}..."
 make -C "${HDRDIR}" M="$(realpath "${MODSRC}")" \
