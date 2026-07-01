@@ -47,9 +47,12 @@ mount_rootfs() {
 
 # ---- 1) 打开输出镜像，取得目标内核版本 ----
 echo "[maxio] output image: ${OUT_GZ}"
-cp "${OUT_GZ}" "${WORK}/out.gz"
-gunzip "${WORK}/out.gz"
-OUT_IMG="${WORK}/out"
+# 用镜像本身的文件名操作，避免解压后内部文件名变成 out
+IMG_NAME="$(basename "${OUT_GZ}")"       # fnnas_..._.img.gz
+IMG_NAME="${IMG_NAME%.gz}"               # fnnas_..._.img
+cp "${OUT_GZ}" "${WORK}/${IMG_NAME}.gz"
+gunzip "${WORK}/${IMG_NAME}.gz"
+OUT_IMG="${WORK}/${IMG_NAME}"
 OUT_MNT="$(mount_rootfs "${OUT_IMG}")" || { echo "[maxio] ERROR: output rootfs not found"; exit 1; }
 OUT_LOOP="$(cat "${WORK}/.lastloop")"
 KVER="$(ls "${OUT_MNT}/lib/modules" | head -n1)"
@@ -105,7 +108,11 @@ mkdir -p "${OUT_MNT}/lib/modules/${KVER}/updates"
 cp "${BUILT_KO}" "${OUT_MNT}/lib/modules/${KVER}/updates/"
 
 # depmod 是架构中立的（解析 ELF 模块头，不依赖 host 架构），用 host 的 depmod -b
-# 直接对镜像目录树处理，避免 qemu chroot 的怪异行为（会误报 fstatat alternatives）。
+# 直接对镜像目录树处理。
+# 注意：renas 打包的镜像里 /lib/modules/<KVER>/ 有个悬空条目 alternatives，
+# depmod 会打印 "ERROR: fstatat(5, alternatives): No such file or directory"。
+# 这是无害的——depmod 仍会正常跑完并生成 modules.dep，下面的校验会确认 maxio 已注册。
+echo "[maxio] 注：depmod 若报 'fstatat ... alternatives' 属正常，不影响结果，以下校验为准。"
 depmod -b "${OUT_MNT}" "${KVER}"
 
 # 校验 maxio 确实进了 modules.dep，否则开机 modprobe 找不到、autoload 失败。
