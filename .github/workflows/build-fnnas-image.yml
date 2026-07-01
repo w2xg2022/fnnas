@@ -469,10 +469,18 @@ jobs:
             echo "No md1000 image in output, skip maxio injection."
             exit 0
           fi
+          # 官方 base 镜像（含内核头文件，用于编译匹配版本的模块）
+          base_xz="$(find /builder "${GITHUB_WORKSPACE}" -name '*.img.xz' -path '*fnnas*' 2>/dev/null | head -n1)"
+          [ -z "${base_xz}" ] && base_xz="$(find /builder "${GITHUB_WORKSPACE}" -name '*.img.xz' 2>/dev/null | head -n1)"
+          if [ -z "${base_xz}" ]; then
+            echo "ERROR: base fnnas .img.xz not found, cannot build module."
+            exit 1
+          fi
+          echo "base image = ${base_xz}"
           sudo apt-get update
           sudo apt-get install -y qemu-user-static binfmt-support
           for img in "${imgs[@]}"; do
-            sudo bash "${GITHUB_WORKSPACE}/extra-modules/inject-maxio.sh" "${img}" "${GITHUB_WORKSPACE}/extra-modules/maxio"
+            sudo bash "${GITHUB_WORKSPACE}/extra-modules/inject-maxio.sh" "${img}" "${GITHUB_WORKSPACE}/extra-modules/maxio" "${base_xz}"
           done
 
       - name: Upload packaged FnNAS to Release
