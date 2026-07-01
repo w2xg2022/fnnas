@@ -104,15 +104,16 @@ echo "[maxio] installing module into output image..."
 mkdir -p "${OUT_MNT}/lib/modules/${KVER}/updates"
 cp "${BUILT_KO}" "${OUT_MNT}/lib/modules/${KVER}/updates/"
 
-# depmod 需要在 arm64 环境执行（读 modules.dep 格式与架构相关）
-# 用 qemu chroot 跑 depmod
-cp /usr/bin/qemu-aarch64-static "${OUT_MNT}/usr/bin/" 2>/dev/null || true
-mount --bind /proc "${OUT_MNT}/proc"
-mount --bind /sys  "${OUT_MNT}/sys"
-mount --bind /dev  "${OUT_MNT}/dev"
-chroot "${OUT_MNT}" depmod -a "${KVER}"
-umount "${OUT_MNT}/proc" "${OUT_MNT}/sys" "${OUT_MNT}/dev"
-rm -f "${OUT_MNT}/usr/bin/qemu-aarch64-static"
+# depmod 是架构中立的（解析 ELF 模块头，不依赖 host 架构），用 host 的 depmod -b
+# 直接对镜像目录树处理，避免 qemu chroot 的怪异行为（会误报 fstatat alternatives）。
+depmod -b "${OUT_MNT}" "${KVER}"
+
+# 校验 maxio 确实进了 modules.dep，否则开机 modprobe 找不到、autoload 失败。
+if ! grep -q 'updates/maxio\.ko' "${OUT_MNT}/lib/modules/${KVER}/modules.dep"; then
+	echo "[maxio] ERROR: maxio.ko not registered in modules.dep after depmod"
+	exit 1
+fi
+echo "[maxio] verified: maxio.ko registered in modules.dep"
 
 echo "maxio" > "${OUT_MNT}/etc/modules-load.d/maxio.conf"
 
