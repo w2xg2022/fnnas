@@ -470,7 +470,7 @@ jobs:
             exit 0
           fi
           sudo apt-get update
-          sudo apt-get install -y qemu-user-static binfmt-support gcc-aarch64-linux-gnu
+          sudo apt-get install -y build-essential qemu-user-static binfmt-support gcc-aarch64-linux-gnu
           for img in "${imgs[@]}"; do
             sudo --preserve-env=GITHUB_REPOSITORY,GH_TOKEN \
               bash "${GITHUB_WORKSPACE}/extra-modules/inject-maxio.sh" "${img}" "${GITHUB_WORKSPACE}/extra-modules/maxio"
