@@ -17,12 +17,12 @@ FnOS 是基于最新 Linux 内核（Debian）深度定制的私有 NAS 系统，
 <table>
 <thead>
 <tr>
-<th nowrap>品牌</th><th nowrap>型号</th><th nowrap>芯片</th><th nowrap>架构</th><th nowrap>RAM+ROM</th><th nowrap>机型代号</th><th>固件</th>
+<th nowrap>品牌</th><th nowrap>型号</th><th nowrap>芯片</th><th nowrap>架构</th><th nowrap>RAM+ROM</th><th nowrap>机型代号</th><th nowrap>固件</th><th>备注</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td nowrap>浪潮</td><td nowrap>MD1000</td><td nowrap>RK3566</td><td nowrap>arm64</td><td nowrap>2+32</td><td nowrap><code>md1000</code></td><td><a href="https://github.com/w2xg2022/fnnas/releases">Releases</a></td>
+<td nowrap>浪潮</td><td nowrap>MD1000</td><td nowrap>RK3566</td><td nowrap>arm64</td><td nowrap>2+32</td><td nowrap><code>md1000</code></td><td nowrap><a href="https://github.com/w2xg2022/fnnas/releases">Releases</a></td><td nowrap>千兆网口可用</td>
 </tr>
 </tbody>
 </table>

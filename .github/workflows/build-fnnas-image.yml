@@ -459,6 +459,22 @@ jobs:
           rootfs_expand: ${{ inputs.rootfs_expand }}
           builder_name: ${{ inputs.builder_name }}
 
+      - name: Inject MD1000 gigabit PHY module (maxio)
+        if: ${{ env.PACKAGED_STATUS == 'success' && !cancelled() }}
+        run: |
+          set -e
+          OUT="${{ env.PACKAGED_OUTPUTPATH }}"
+          mapfile -t imgs < <(find "${OUT}" /builder "${GITHUB_WORKSPACE}" -name '*md1000*.img.gz' 2>/dev/null | xargs -r -n1 realpath 2>/dev/null | sort -u)
+          if [ ${#imgs[@]} -eq 0 ]; then
+            echo "No md1000 image in output, skip maxio injection."
+            exit 0
+          fi
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support
+          for img in "${imgs[@]}"; do
+            sudo bash "${GITHUB_WORKSPACE}/extra-modules/inject-maxio.sh" "${img}" "${GITHUB_WORKSPACE}/extra-modules/maxio"
+          done
+
       - name: Upload packaged FnNAS to Release
         uses: ophub/upload-to-releases@main
         if: ${{ env.PACKAGED_STATUS == 'success' && !cancelled() }}
