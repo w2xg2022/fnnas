@@ -75,23 +75,27 @@ mkdir -p "${HDRDIR}"
 tar xzf "${WORK}/${OUTER_TAR}" -C "${WORK}" "${HEADER_TAR}"
 tar xzf "${WORK}/${HEADER_TAR}" -C "${HDRDIR}"
 
-# 创建 /lib/modules/KVER/build 指向 headers
-FAKE_MODDIR="${WORK}/fake-modules/${KVER}"
-mkdir -p "${FAKE_MODDIR}"
-ln -s "${HDRDIR}" "${FAKE_MODDIR}/build"
+# headers tarball 是在 arm64 环境打包的（arm64 host tools、gcc 12.x）。与其在 x86 上
+# 交叉编译对抗架构错配，不如在 arm64 容器里原生编译——完全复刻实机上一次成功的环境：
+# headers 里的 arm64 fixdep/modpost 直接能跑，无需重编 host tools、无需 .config。
+BUILDDIR="${WORK}/build"
+mkdir -p "${BUILDDIR}"
+cp "${MODSRC}/maxio.c" "${MODSRC}/Makefile" "${BUILDDIR}/"
 
-# headers tarball 是在 arm64 环境打包的，scripts/ 下的 host tool（fixdep、modpost 等）
-# 都是 aarch64 binary，在 x86 runner 上跑不了。先用 HOSTCC=gcc 重编所有 host tools。
-echo "[maxio] rebuilding host tools with native gcc..."
-make -C "${HDRDIR}" scripts HOSTCC=gcc HOSTCXX=g++ 2>&1 | tail -10
+# 确保 docker 能识别 arm64 binfmt（qemu 模拟）
+docker run --privileged --rm tonistiigi/binfmt --install arm64 >/dev/null 2>&1 || true
 
-echo "[maxio] cross-compiling maxio.ko for ${KVER}..."
-make -C "${HDRDIR}" M="$(realpath "${MODSRC}")" \
-	ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- \
-	HOSTCC=gcc HOSTCXX=g++ \
-	KVER="${KVER}" modules
+echo "[maxio] compiling maxio.ko natively in arm64 container for ${KVER}..."
+docker run --rm --platform linux/arm64 \
+	-v "${HDRDIR}:/kbuild" -v "${BUILDDIR}:/src" \
+	arm64v8/debian:bookworm \
+	bash -c "set -e
+		export DEBIAN_FRONTEND=noninteractive
+		apt-get update -qq
+		apt-get install -y -qq build-essential bc >/dev/null
+		make -C /kbuild M=/src KVER='${KVER}' modules"
 
-BUILT_KO="$(realpath "${MODSRC}")/maxio.ko"
+BUILT_KO="${BUILDDIR}/maxio.ko"
 [ -f "${BUILT_KO}" ] || { echo "[maxio] ERROR: maxio.ko not produced"; exit 1; }
 echo "[maxio] built: $(stat -c%s "${BUILT_KO}") bytes"
 
